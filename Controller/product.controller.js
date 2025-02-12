@@ -45,6 +45,7 @@ const addProduct = async (req, res) => {
 
 const editProduct = async (req, res) => {
   try {
+  
     const { id } = req.params;
     const updateFields = { ...req.body };
 

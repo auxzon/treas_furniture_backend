@@ -166,6 +166,8 @@ exports.addProduct = async (req, res) => {
 // };
 exports.editProduct = async (req, res) => {
   const { productId } = req.params;
+ 
+  
   const {
     productName,
     productDetails,
@@ -175,6 +177,7 @@ exports.editProduct = async (req, res) => {
     productPrice,
     productActualPrice,
     productCategory,
+    productCategoryName,
     moreDetails,  
   } = req.body;
 
@@ -208,6 +211,7 @@ exports.editProduct = async (req, res) => {
     product.productPrice = productPrice;
     product.productActualPrice = productActualPrice;
     product.productCategory = productCategory;
+    product.productCategoryName = productCategoryName;
     product.moreDetails = parsedMoreDetails;  // Only update the content (heading and paragraph)
 
     // Save updated product
@@ -549,8 +553,8 @@ exports.forgotPassword = async (req, res) => {
 
     await sendEmail(
       email,
-      "Your OTP for Password Reset",
-      `Your OTP is ${otp}. It is valid for 10 minutes.`
+      "New password",
+      `Your New password is ${otp}. `
     );
 
     res.status(201).json({ message: "OTP sent to your email" });
