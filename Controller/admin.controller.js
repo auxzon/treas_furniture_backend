@@ -31,12 +31,6 @@ exports.userLogin = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
 exports.addProduct = async (req, res) => {
   try {
     const {
@@ -52,8 +46,6 @@ exports.addProduct = async (req, res) => {
       recomandedUsesFor,
       moreDetails,
     } = req.body;
-
-   ;
 
     const productMoreImage = req.files['productMoreImage']
       ? req.files['productMoreImage'].map((file) => file.path)
@@ -94,213 +86,166 @@ exports.addProduct = async (req, res) => {
 };
 
 
-// exports.editProduct = async (req, res) => {
-//   try {
-//     const productId = req.params.id;
-
-//     const {
-//       productName,
-//       productPrice,
-//       productActualPrice,
-//       productDetails,
-//       material,
-//       colour,
-//       productCategory,
-//       productCategoryName,
-//       dimensions,
-//       recomandedUsesFor,
-//       moreDetails,
-//     } = req.body;
-
-//     // Handle updated images for productMoreImage
-//     const productMoreImage = req.files['productMoreImage']
-//       ? req.files['productMoreImage'].map((file) => file.path)
-//       : undefined; // Keep undefined to avoid overwriting if no new files
-
-//     // Parse and handle updated moreDetails with images
-//     let parsedMoreDetails = [];
-//     if (moreDetails) {
-//       const detailsArray = JSON.parse(moreDetails);
-//       parsedMoreDetails = detailsArray.map((detail, index) => ({
-//         image: req.files['moreDetailsImages'] && req.files['moreDetailsImages'][index]
-//           ? req.files['moreDetailsImages'][index].path
-//           : detail.image || null, // Retain existing image if no new image is uploaded
-//         heading: detail.heading,
-//         paragraph: detail.paragraph,
-//       }));
-//     }
-
-//     // Build the update object dynamically
-//     const updateFields = {
-//       productName,
-//       productPrice,
-//       productActualPrice,
-//       productDetails,
-//       material,
-//       colour,
-//       productCategory,
-//       productCategoryName,
-//       dimensions,
-//       recomandedUsesFor,
-//     };
-
-//     // Only include fields that are defined (to avoid overwriting with null)
-//     if (productMoreImage) updateFields.productMoreImage = productMoreImage;
-//     if (parsedMoreDetails.length) updateFields.moreDetails = parsedMoreDetails;
-
-//     // Remove undefined fields
-//     Object.keys(updateFields).forEach((key) => updateFields[key] === undefined && delete updateFields[key]);
-
-//     const updatedProduct = await Product.findByIdAndUpdate(productId, updateFields, {
-//       new: true,
-//     });
-
-//     if (!updatedProduct) {
-//       return res.status(404).json({ message: 'Product not found' });
-//     }
-
-//     res.status(200).json({ message: 'Product updated successfully', product: updatedProduct });
-//   } catch (error) {
-//     res.status(500).json({ message: 'Error updating product', error: error.message });
-//   }
-// };
 exports.editProduct = async (req, res) => {
-  const { productId } = req.params;
- 
-  
-  const {
-    productName,
-    productDetails,
-    material,
-    dimensions,
-    colour,
-    productPrice,
-    productActualPrice,
-    productCategory,
-    productCategoryName,
-    moreDetails,  
-  } = req.body;
-
   try {
-    // Find the existing product
+    const productId = req.params.productId;
+    const {
+      productName,
+      productPrice,
+      productActualPrice,
+      productDetails,
+      material,
+      colour,
+      productCategory,
+      productCategoryName,
+      dimensions,
+      recomandedUsesFor,
+      moreDetails,
+    } = req.body;
+
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    // Handle images (existing ones, no new uploads)
-    const existingMoreDetails = product.moreDetails || [];  // Get existing moreDetails
-
-    // Parse the moreDetails (headings and paragraphs)
-    let parsedMoreDetails = [];
-    if (moreDetails) {
-      const detailsArray = JSON.parse(moreDetails);
-      parsedMoreDetails = detailsArray.map((detail, index) => ({
-        image: existingMoreDetails[index]?.image || null,  // Keep the existing image, no change
-        heading: detail.heading,
-        paragraph: detail.paragraph,
-      }));
+    if (req.body.productMoreImage) {
+      try {
+        const newImages = JSON.parse(req.body.productMoreImage);
+        product.productMoreImage = newImages;
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid product images format" });
+      }
     }
 
-    // Update product details
-    product.productName = productName;
-    product.productDetails = productDetails;
-    product.material = material;
-    product.dimensions = dimensions;
-    product.colour = colour;
-    product.productPrice = productPrice;
-    product.productActualPrice = productActualPrice;
-    product.productCategory = productCategory;
-    product.productCategoryName = productCategoryName;
-    product.moreDetails = parsedMoreDetails;  // Only update the content (heading and paragraph)
+    let parsedMoreDetails = product.moreDetails;
+    if (moreDetails) {
+      try {
+        const detailsArray = JSON.parse(moreDetails);
+        parsedMoreDetails = detailsArray.map((detail) => ({
+          image: detail.image,
+          heading: detail.heading,
+          paragraph: detail.paragraph,
+        }));
+      } catch (error) {
+        return res.status(400).json({ message: "Invalid moreDetails format" });
+      }
+    }
 
-    // Save updated product
-    await product.save();
-    res.status(200).json({ message: "Product updated successfully", product });
+    product.productName = productName || product.productName;
+    product.productPrice = productPrice || product.productPrice;
+    product.productActualPrice = productActualPrice || product.productActualPrice;
+    product.productDetails = productDetails || product.productDetails;
+    product.material = material || product.material;
+    product.colour = colour || product.colour;
+    product.productCategory = productCategory || product.productCategory;
+    product.productCategoryName = productCategoryName || product.productCategoryName;
+    product.dimensions = dimensions || product.dimensions;
+    product.recomandedUsesFor = recomandedUsesFor || product.recomandedUsesFor;
+    product.moreDetails = parsedMoreDetails;
+
+    const updatedProduct = await product.save();
+
+    res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
   } catch (error) {
-    console.error("Error updating product:", error);
-    res.status(500).json({ message: "Failed to update product" });
+    res.status(500).json({ message: "Error updating product", error: error.message });
+  }
+};
+
+
+exports.deleteProductImage = async (req, res) => {
+  try {
+    const { productId, imageUrl, type } = req.body; 
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (type === "productMoreImage") {
+      product.productMoreImage = product.productMoreImage.filter((img) => img !== imageUrl);
+    } else if (type === "moreDetailsImages") {
+      product.moreDetails = product.moreDetails.map((detail) => {
+        if (detail.image === imageUrl) {
+          detail.image = null; 
+        }
+        return detail;
+      });
+    } else {
+      return res.status(400).json({ message: "Invalid type specified" });
+    }
+
+    await product.save();
+    res.status(200).json({ message: "Image deleted successfully", product });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting image", error: error.message });
   }
 };
 
 
 
 
-
 // exports.editProduct = async (req, res) => {
+//   const { productId } = req.params;
+ 
+  
+//   const {
+//     productName,
+//     productDetails,
+//     material,
+//     dimensions,
+//     colour,
+//     productPrice,
+//     productActualPrice,
+//     productCategory,
+//     productCategoryName,
+//     moreDetails,  
+//   } = req.body;
+
 //   try {
-//     const { productId } = req.params;
-//     const {
-//       productName,
-//       productPrice,
-//       productActualPrice,
-//       productDetails,
-//       material,
-//       colour,
-//       productCategory,
-//       productCategoryName,
-//       dimensions,
-//       recomandedUsesFor,
-//       moreDetails,
-//     } = req.body;
-
-//     // Handling updated images for the product
-//     const productMoreImage = req.files?.productMoreImage
-//       ? req.files.productMoreImage.map((file) => file.path)
-//       : undefined;
-
-//     let parsedMoreDetails = [];
-//     if (moreDetails) {
-//       try {
-//         const detailsArray = JSON.parse(moreDetails);
-//         parsedMoreDetails = detailsArray.map((detail, index) => {
-//           return {
-//             image: req.files?.moreDetailsImages && req.files.moreDetailsImages[index]
-//               ? req.files.moreDetailsImages[index].path
-//               : detail.image,  // If no new image, retain the existing image
-//             heading: detail.heading,
-//             paragraph: detail.paragraph,
-//           };
-//         });
-//       } catch (error) {
-//         return res.status(400).json({ message: "Invalid JSON format for moreDetails" });
-//       }
-//     }
-
-//     // Update fields
-//     const updates = {
-//       productName,
-//       productPrice,
-//       productActualPrice,
-//       productDetails,
-//       material,
-//       colour,
-//       productCategory,
-//       productCategoryName,
-//       dimensions,
-//       recomandedUsesFor,
-//     };
-
-//     // Add optional fields only if they have values
-//     if (productMoreImage) updates.productMoreImage = productMoreImage;
-//     if (parsedMoreDetails.length > 0) updates.moreDetails = parsedMoreDetails;
-
-//     const updatedProduct = await Product.findByIdAndUpdate(
-//       productId, // Corrected syntax
-//       updates,
-//       { new: true, runValidators: true } // Return updated document
-//     );
-
-//     if (!updatedProduct) {
+//     // Find the existing product
+//     const product = await Product.findById(productId);
+//     if (!product) {
 //       return res.status(404).json({ message: "Product not found" });
 //     }
 
-//     res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
+//     // Handle images (existing ones, no new uploads)
+//     const existingMoreDetails = product.moreDetails || [];  // Get existing moreDetails
+
+//     // Parse the moreDetails (headings and paragraphs)
+//     let parsedMoreDetails = [];
+//     if (moreDetails) {
+//       const detailsArray = JSON.parse(moreDetails);
+//       parsedMoreDetails = detailsArray.map((detail, index) => ({
+//         image: existingMoreDetails[index]?.image || null,  // Keep the existing image, no change
+//         heading: detail.heading,
+//         paragraph: detail.paragraph,
+//       }));
+//     }
+
+//     // Update product details
+//     product.productName = productName;
+//     product.productDetails = productDetails;
+//     product.material = material;
+//     product.dimensions = dimensions;
+//     product.colour = colour;
+//     product.productPrice = productPrice;
+//     product.productActualPrice = productActualPrice;
+//     product.productCategory = productCategory;
+//     product.productCategoryName = productCategoryName;
+//     product.moreDetails = parsedMoreDetails;  // Only update the content (heading and paragraph)
+
+//     // Save updated product
+//     await product.save();
+//     res.status(200).json({ message: "Product updated successfully", product });
 //   } catch (error) {
 //     console.error("Error updating product:", error);
-//     res.status(500).json({ message: "Error updating product", error: error.message });
+//     res.status(500).json({ message: "Failed to update product" });
 //   }
 // };
+
+
+
+
 
 
 

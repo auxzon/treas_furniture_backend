@@ -26,9 +26,13 @@ router.post(
 
 router.put(
   "/edit-product/:productId",
-  upload.fields([{ name: "productMoreImage" }, { name: "moreDetailsImages" }]),
+  upload.fields([
+    { name: "productMoreImage", maxCount: 10 },
+    { name: "moreDetailsImages", maxCount: 10 },
+  ]),
   adminController.editProduct
 );
+
 
 router.post(
   "/AddProductMoreImages",
