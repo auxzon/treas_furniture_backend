@@ -23,12 +23,33 @@ require('dotenv').config();
 // }));
 app.use(cors());
 
+// const allowedOrigins = [
+//   "https://treasfurniture.com",
+//   "https://www.treasfurniture.com",
+//   "https://admin.treasfurniture.com"
+// ];
+
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   }
+// }));
+app.use(cors());
+
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
 
+app.use(express.urlencoded({extended:true}))
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/treas", TreasRouter);
 
+app.get("/", (req, res) => {
+  res.send("<h1>Server is running. Check out <a href='https://treasfurniture.com'>Treas Furniture</a></h1>");
+});
 app.get("/", (req, res) => {
   res.send("<h1>Server is running. Check out <a href='https://treasfurniture.com'>Treas Furniture</a></h1>");
 });
