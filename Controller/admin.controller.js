@@ -102,13 +102,11 @@ exports.editProduct = async (req, res) => {
       recomandedUsesFor,
       moreDetails,
     } = req.body;
-
-    const product = await Product.findById(productId);
+ const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
     }
-
-    if (req.body.productMoreImage) {
+  if (req.body.productMoreImage) {
       try {
         const newImages = JSON.parse(req.body.productMoreImage);
         product.productMoreImage = newImages;
@@ -116,7 +114,6 @@ exports.editProduct = async (req, res) => {
         return res.status(400).json({ message: "Invalid product images format" });
       }
     }
-
     let parsedMoreDetails = product.moreDetails;
     if (moreDetails) {
       try {
@@ -130,7 +127,7 @@ exports.editProduct = async (req, res) => {
         return res.status(400).json({ message: "Invalid moreDetails format" });
       }
     }
-
+ 
     product.productName = productName || product.productName;
     product.productPrice = productPrice || product.productPrice;
     product.productActualPrice = productActualPrice || product.productActualPrice;
@@ -142,15 +139,14 @@ exports.editProduct = async (req, res) => {
     product.dimensions = dimensions || product.dimensions;
     product.recomandedUsesFor = recomandedUsesFor || product.recomandedUsesFor;
     product.moreDetails = parsedMoreDetails;
-
+ 
     const updatedProduct = await product.save();
-
+ 
     res.status(200).json({ message: "Product updated successfully", product: updatedProduct });
   } catch (error) {
     res.status(500).json({ message: "Error updating product", error: error.message });
   }
 };
-
 
 exports.deleteProductImage = async (req, res) => {
   try {
@@ -293,6 +289,97 @@ exports.addCategory = async (req, res) => {
       .json({ message: "Product added successfully", product: newcategory });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+
+exports.editCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params; // Custom categoryId (not _id)
+    const { categoryName } = req.body;
+
+    console.log("Request Body:", req.body);
+    console.log("Category ID:", categoryId);
+
+    // ✅ Step 1: Check if the Category Exists First
+    const categoryExists = await Category.findOne({ categoryId: categoryId });
+
+    if (!categoryExists) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+
+    // ✅ Step 2: Update the Category Name
+    const updatedCategory = await Category.findOneAndUpdate(
+      { categoryId: categoryId },  // <-- FIXED HERE
+      { categoryName },
+      { new: true }
+    );
+
+    // ✅ Step 3: Update Product Name in Product Collection
+    await Product.updateMany(
+      { productCategory: categoryId },  // <-- FIXED HERE
+      { productCategoryName: categoryName }
+    );
+
+    // ✅ Step 4: Send Response
+    res.status(200).json({
+      message: "Category and related products updated successfully",
+      updatedCategory
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+
+
+
+
+
+
+
+
+
+exports.deleteCategory = async (req, res) => {
+  try {
+    const { categoryId } = req.params; // Custom categoryId (not _id)
+
+    // ✅ Step 1: Check if any products exist under this categoryId
+    const existingProducts = await Product.find({ productCategory: categoryId });
+
+    if (existingProducts.length > 0) {
+      // ✅ Step 2: Prevent deletion if products exist
+      return res.status(400).json({
+        success: false,
+        message: "Cannot delete this category. Products exist under this category.",
+      });
+    }
+
+    // ✅ Step 3: Delete the category if no products exist
+    const deletedCategory = await Category.findOneAndDelete({ categoryId });
+
+    if (!deletedCategory) {
+      return res.status(404).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    // ✅ Step 4: Send success response
+    res.status(200).json({
+      success: true,
+      message: "Category deleted successfully",
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message,
+    });
   }
 };
 

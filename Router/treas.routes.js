@@ -12,6 +12,9 @@ const Banner = require("../Model/Banner.model");
 // );
 
 router.post("/AddCategory", adminController.addCategory);
+router.delete("/category/:categoryId", adminController.deleteCategory); 
+router.post("/category/:categoryId", adminController.editCategory); 
+
 router.post("/login", adminController.userLogin);
 router.get("/getallProducts", adminController.getProducts);
 
